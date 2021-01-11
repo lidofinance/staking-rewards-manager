@@ -12,24 +12,42 @@ def ape(accounts):
     return accounts[0]
 
 
+@pytest.fixture()
+def steth_whale(accounts, steth_token, lido, lp_token):
+    acct = accounts[1]
+    lido.submit(ZERO_ADDRESS, {"from": acct, "value": "10 ether"})
+    assert steth_token.balanceOf(acct) > 0
+    assert lp_token.balanceOf(acct) == 0
+    return acct
+
+
 @pytest.fixture(scope='module')
 def stranger(accounts):
     return accounts[9]
 
 
-# holds a lot of stETH
 @pytest.fixture(scope='module')
-def whale(accounts, steth_token):
-    address = "0x32199f1ffd5c9a5745a98fe492570a8d1601dc4c"
-    assert steth_token.balanceOf(address) > 0
-    # assert lp_token.balanceOf(address) == 0
-    return accounts.at(address, force=True)
+def curve_farmer(accounts, gauge):
+    # already deposited to the steth gauge
+    acct = accounts.at("0x32199f1fFD5C9a5745A98FE492570a8D1601Dc4C", force=True)
+    assert gauge.balanceOf(acct) > 0
+    return acct
 
 
 # Lido DAO Voting app
 @pytest.fixture(scope='module')
 def dao_voting(accounts):
     return accounts.at("0x2e59A20f205bB85a89C53f1936454680651E618e", force=True)
+
+
+@pytest.fixture(scope='module')
+def lido(interface):
+    return interface.Lido("0xae7ab96520de3a18e5e111b5eaab095312d7fe84")
+
+
+@pytest.fixture(scope='module')
+def steth_token(interface, lido):
+    return interface.ERC20(lido.address)
 
 
 # Lido DAO Agent app
@@ -50,11 +68,6 @@ def lp_token(steth_pool, interface):
 
 
 @pytest.fixture(scope='module')
-def steth_token(interface):
-    return interface.ERC20("0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84")
-
-
-@pytest.fixture(scope='module')
 def ldo_token(interface):
     return interface.ERC20("0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32")
 
@@ -69,39 +82,56 @@ def gauge_admin(gauge, accounts):
     return accounts.at(gauge.admin(), force=True)
 
 
-@pytest.fixture()
-def rewards_manager(RewardsManager, ape):
-    return RewardsManager.deploy({"from": ape})
+class RewardsHelpers:
+    StakingRewards = None
+    RewardsManager = None
+
+    @staticmethod
+    def deploy_rewards(rewards_period, reward_amount, dao_agent, lp_token, rewards_token, deployer):
+        manager = RewardsHelpers.RewardsManager.deploy({"from": deployer})
+
+        rewards = RewardsHelpers.StakingRewards.deploy(
+            dao_agent, # _owner
+            manager, # _rewardsDistribution
+            rewards_token, # _rewardsToken
+            lp_token, # _stakingToken
+            rewards_period, # _rewardsDuration
+            {"from": deployer}
+        )
+
+        manager.set_rewards_contract(rewards, {"from": deployer})
+        manager.set_reward_amount(reward_amount, {"from": deployer})
+
+        assert manager.rewards_contract() == rewards
+        assert manager.reward_amount() == reward_amount
+
+        manager.transfer_ownership(dao_agent, {"from": deployer})
+
+        return {"manager": manager, "rewards": rewards}
+
+    @staticmethod
+    def install_rewards(gauge, gauge_admin, rewards_token, rewards):
+        sigs = [
+            rewards.stake.signature[2:],
+            rewards.withdraw.signature[2:],
+            rewards.getReward.signature[2:]
+        ]
+        gauge.set_rewards(
+            rewards, # _reward_contract
+            f"0x{sigs[0]}{sigs[1]}{sigs[2]}{'00' * 20}", # _sigs
+            [rewards_token] + [ZERO_ADDRESS] * 7, # _reward_tokens
+            {"from": gauge_admin}
+        )
+        assert gauge.reward_contract() == rewards
+        assert gauge.reward_tokens(0) == rewards_token
+        assert gauge.reward_tokens(1) == ZERO_ADDRESS
 
 
-ONE_WEEK = 60 * 60 * 24 * 7
-
-
-@pytest.fixture()
-def rewards(StakingRewards, rewards_manager, gauge, dao_agent, lp_token, ldo_token, ape, gauge_admin):
-    rewards = StakingRewards.deploy(
-        dao_agent, # _owner
-        rewards_manager, # _rewardsDistribution
-        ldo_token, # _rewardsToken
-        lp_token, # _stakingToken
-        ONE_WEEK, # _rewardsDuration
-        {"from": ape}
-    )
-    sigs = [
-        rewards.stake.signature[2:],
-        rewards.withdraw.signature[2:],
-        rewards.getReward.signature[2:]
-    ]
-    gauge.set_rewards(
-        rewards, # _reward_contract
-        f"0x{sigs[0]}{sigs[1]}{sigs[2]}{'00' * 20}", # _sigs
-        [ldo_token] + [ZERO_ADDRESS] * 7, # _reward_tokens
-        {"from": gauge_admin}
-    )
-    assert gauge.reward_contract() == rewards
-    assert gauge.reward_tokens(0) == ldo_token
-    assert gauge.reward_tokens(1) == ZERO_ADDRESS
-    return rewards
+@pytest.fixture(scope='module')
+def rewards_helpers(StakingRewards, RewardsManager):
+    RewardsHelpers.StakingRewards = StakingRewards
+    RewardsHelpers.RewardsManager = RewardsManager
+    return RewardsHelpers
 
 
 class Helpers:
