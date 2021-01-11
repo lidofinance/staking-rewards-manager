@@ -12,6 +12,11 @@ def ape(accounts):
     return accounts[0]
 
 
+@pytest.fixture(scope='module')
+def stranger(accounts):
+    return accounts[9]
+
+
 # holds a lot of stETH
 @pytest.fixture(scope='module')
 def whale(accounts, steth_token):
@@ -64,18 +69,18 @@ def gauge_admin(gauge, accounts):
     return accounts.at(gauge.admin(), force=True)
 
 
+@pytest.fixture()
+def rewards_manager(RewardsManager, ape):
+    return RewardsManager.deploy({"from": ape})
+
+
 ONE_WEEK = 60 * 60 * 24 * 7
 
 
 @pytest.fixture()
-def rewards_manager(RewardsManager, ldo_token, ape):
-    return RewardsManager.deploy(ldo_token, ape, {"from": ape})
-
-
-@pytest.fixture()
-def rewards(StakingRewards, rewards_manager, gauge, lp_token, ldo_token, ape, gauge_admin):
+def rewards(StakingRewards, rewards_manager, gauge, dao_agent, lp_token, ldo_token, ape, gauge_admin):
     rewards = StakingRewards.deploy(
-        rewards_manager, # _owner
+        dao_agent, # _owner
         rewards_manager, # _rewardsDistribution
         ldo_token, # _rewardsToken
         lp_token, # _stakingToken
