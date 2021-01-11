@@ -285,7 +285,7 @@ contract ReentrancyGuard {
 contract RewardsDistributionRecipient is Owned {
     address public rewardsDistribution;
 
-    function notifyRewardAmount(uint256 reward) external;
+    function notifyRewardAmount(uint256 reward, address rewardHolder) external;
 
     modifier onlyRewardsDistribution() {
         require(msg.sender == rewardsDistribution, "Caller is not RewardsDistribution contract");
@@ -552,10 +552,11 @@ contract StakingRewards is IStakingRewards, RewardsDistributionRecipient, Reentr
 
     /* ========== RESTRICTED FUNCTIONS ========== */
 
-    function notifyRewardAmount(uint256 reward) external onlyRewardsDistribution updateReward(address(0)) {
+    function notifyRewardAmount(uint256 reward, address rewardHolder) external onlyRewardsDistribution updateReward(address(0)) {
         // handle the transfer of reward tokens via `transferFrom` to reduce the number
         // of transactions required and ensure correctness of the reward amount
-        rewardsToken.safeTransferFrom(msg.sender, address(this), reward);
+
+        rewardsToken.safeTransferFrom(rewardHolder, address(this), reward);
 
         if (block.timestamp >= periodFinish) {
             rewardRate = reward.div(rewardsDuration);
