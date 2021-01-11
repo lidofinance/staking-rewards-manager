@@ -66,11 +66,17 @@ def gauge_admin(gauge, accounts):
 
 ONE_WEEK = 60 * 60 * 24 * 7
 
+
 @pytest.fixture()
-def rewards(StakingRewards, gauge, lp_token, ldo_token, ape, gauge_admin):
+def rewards_manager(RewardsManager, ldo_token, ape):
+    return RewardsManager.deploy(ldo_token, ape, {"from": ape})
+
+
+@pytest.fixture()
+def rewards(StakingRewards, rewards_manager, gauge, lp_token, ldo_token, ape, gauge_admin):
     rewards = StakingRewards.deploy(
-        ape, # _owner
-        ape, # _rewardsDistribution
+        rewards_manager, # _owner
+        rewards_manager, # _rewardsDistribution
         ldo_token, # _rewardsToken
         lp_token, # _stakingToken
         ONE_WEEK, # _rewardsDuration
