@@ -149,6 +149,23 @@ def _start_next_rewards_period():
     StakingRewards(_rewards_contract).notifyRewardAmount(_rewards_per_duration)
 
 
+@view
+@internal
+def _is_rewards_period_finished() -> bool:
+    return block.timestamp >= StakingRewards(self.rewards_contract).periodFinish()
+
+
+@view
+@external
+def is_rewards_period_finished() -> bool:
+    """
+    @notice
+        Whether the current rewards period has finished. Only owner can start
+        a new rewards manager unless the current onr is not finished.
+    """
+    return self._is_rewards_period_finished()
+
+
 @external
 def start_next_rewards_period(_force: bool = False):
     """
@@ -163,6 +180,5 @@ def start_next_rewards_period(_force: bool = False):
     if _force:
         assert msg.sender == self.owner, "not permitted"
     else:
-        assert block.timestamp >= StakingRewards(self.rewards_contract).periodFinish(), (
-            "rewards period not finished")
+        assert self._is_rewards_period_finished(), "rewards period not finished"
     self._start_next_rewards_period()
