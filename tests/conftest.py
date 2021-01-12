@@ -1,6 +1,8 @@
 import pytest
 from brownie import Wei, ZERO_ADDRESS
+
 from scripts.deploy import deploy_manager_and_rewards
+from utils.config import lp_token_address, ldo_token_address, lido_dao_agent_address
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -54,7 +56,7 @@ def steth_token(interface, lido):
 # Lido DAO Agent app
 @pytest.fixture(scope='module')
 def dao_agent(interface):
-    return interface.Agent("0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c")
+    return interface.Agent(lido_dao_agent_address)
 
 
 @pytest.fixture(scope='module')
@@ -63,14 +65,13 @@ def steth_pool(interface):
 
 
 @pytest.fixture(scope='module')
-def lp_token(steth_pool, interface):
-    token_address = steth_pool.lp_token()
-    return interface.ERC20(token_address)
+def lp_token(interface):
+    return interface.ERC20(lp_token_address)
 
 
 @pytest.fixture(scope='module')
 def ldo_token(interface):
-    return interface.ERC20("0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32")
+    return interface.ERC20(ldo_token_address)
 
 
 @pytest.fixture(scope='module')
