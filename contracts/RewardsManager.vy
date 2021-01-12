@@ -69,3 +69,16 @@ def start_next_rewards_period():
 
     ERC20(ldo_token).approve(rewards, amount)
     StakingRewards(rewards).notifyRewardAmount(amount, self)
+
+
+@external
+def recover_erc20(_token: address, _recipient: address = msg.sender):
+    """
+    @notice
+        Transfers the whole balance of the given ERC20 token from self
+        to the recipient. Can only be called by the owner.
+    """
+    assert msg.sender == self.owner, "not permitted"
+    token_balance: uint256 = ERC20(_token).balanceOf(self)
+    if token_balance != 0:
+        assert ERC20(_token).transfer(_recipient, token_balance), "token transfer failed"
