@@ -58,7 +58,8 @@ def start_next_rewards_period():
     """
     @notice
         Starts the next rewards period of duration `rewards_contract.rewardsDuration()`,
-        distributing `self.reward_amount()` tokens throughout the period.
+        distributing `ldo_token.balanceOf(self)` tokens throughout the period. The current
+        rewards period must be finished by this time.
     """
     rewards: address = self.rewards_contract
     amount: uint256 = ERC20(ldo_token).balanceOf(self)
