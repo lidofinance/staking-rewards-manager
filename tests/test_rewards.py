@@ -44,7 +44,7 @@ def test_happy_path(
         rewards=rewards_contract
     )
 
-    # DAO approves the rewards contract to spend LDO
+    # DAO transfers the rewards to the contract to spend LDO
 
     assert ldo_token.balanceOf(dao_agent) >= reward_amount
     transfer_calldata = ldo_token.transfer.encode_input(rewards_manager, reward_amount)
@@ -74,7 +74,7 @@ def test_happy_path(
     assert lp_token.balanceOf(steth_whale) == 0
     assert gauge.balanceOf(steth_whale) > 0
 
-    # the farmer already has theor LP tokens locked into the gauge
+    # the farmer already has their LP tokens locked into the gauge
 
     assert gauge.balanceOf(curve_farmer) > 0
 
@@ -111,3 +111,55 @@ def test_happy_path(
 
     assert whale_ldo_balance > whale_ldo_prev_balance
     assert farmer_ldo_balance > farmer_ldo_prev_balance
+
+    whale_ldo_prev_balance = ldo_token.balanceOf(steth_whale)
+    farmer_ldo_prev_balance = ldo_token.balanceOf(curve_farmer)
+
+    # DAO transfers the rewards to the contract once again
+
+    assert ldo_token.balanceOf(dao_agent) >= reward_amount
+    transfer_calldata = ldo_token.transfer.encode_input(rewards_manager, reward_amount)
+    dao_agent.execute(ldo_token, 0, transfer_calldata, {"from": dao_voting})
+    assert ldo_token.balanceOf(rewards_manager) == reward_amount
+
+    # someone starts the second rewards period
+
+    rewards_manager.start_next_rewards_period({"from": stranger})
+    assert rewards_manager.is_rewards_period_finished() == False
+
+    # rewards period partially passes
+
+    chain.sleep(rewards_period // 2)
+    chain.mine()
+
+    assert rewards_manager.is_rewards_period_finished() == False
+
+    # farmer wants to get out because it's not over 9000 apy anymore
+
+    gauge.withdraw(gauge.balanceOf(curve_farmer), {"from": curve_farmer})
+
+    farmer_ldo_balance = ldo_token.balanceOf(curve_farmer)
+    assert farmer_ldo_balance > farmer_ldo_prev_balance
+    assert gauge.balanceOf(curve_farmer) == 0
+
+    farmer_ldo_prev_balance = ldo_token.balanceOf(curve_farmer)
+
+    # rewards period fully passes
+
+    chain.sleep(rewards_period // 2 + 100)
+    chain.mine()
+
+    assert rewards_manager.is_rewards_period_finished() == True
+
+    # whale still claim their rewards
+
+    gauge.claim_rewards({"from": steth_whale})
+    whale_ldo_balance = ldo_token.balanceOf(steth_whale)
+    assert whale_ldo_balance > whale_ldo_prev_balance
+
+    # farmer gets no reward cause she's out
+
+    gauge.claim_rewards({"from": curve_farmer})
+    farmer_ldo_balance = ldo_token.balanceOf(curve_farmer)
+    assert farmer_ldo_balance == farmer_ldo_prev_balance
+    assert gauge.balanceOf(curve_farmer) == 0
