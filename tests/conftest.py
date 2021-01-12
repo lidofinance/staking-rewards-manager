@@ -87,7 +87,7 @@ class RewardsHelpers:
     RewardsManager = None
 
     @staticmethod
-    def deploy_rewards(rewards_period, reward_amount, dao_agent, lp_token, rewards_token, deployer):
+    def deploy_rewards(rewards_period, dao_agent, lp_token, rewards_token, deployer):
         manager = RewardsHelpers.RewardsManager.deploy({"from": deployer})
 
         rewards = RewardsHelpers.StakingRewards.deploy(
@@ -100,10 +100,7 @@ class RewardsHelpers:
         )
 
         manager.set_rewards_contract(rewards, {"from": deployer})
-        manager.set_reward_amount(reward_amount, {"from": deployer})
-
         assert manager.rewards_contract() == rewards
-        assert manager.reward_amount() == reward_amount
 
         manager.transfer_ownership(dao_agent, {"from": deployer})
 

@@ -25,11 +25,9 @@ def test_happy_path(
 
     rewards_period = ONE_WEEK
     reward_amount = Wei("1 ether")
-    approve_amount = 4 * reward_amount
 
     deployed = rewards_helpers.deploy_rewards(
         rewards_period=rewards_period,
-        reward_amount=reward_amount,
         dao_agent=dao_agent,
         lp_token=lp_token,
         rewards_token=ldo_token,
@@ -48,10 +46,10 @@ def test_happy_path(
 
     # DAO approves the rewards contract to spend LDO
 
-    assert ldo_token.balanceOf(dao_agent) >= approve_amount
-    approve_calldata = ldo_token.approve.encode_input(rewards_contract, approve_amount)
-    dao_agent.execute(ldo_token, 0, approve_calldata, {"from": dao_voting})
-    assert ldo_token.allowance(dao_agent, rewards_contract) == approve_amount
+    assert ldo_token.balanceOf(dao_agent) >= reward_amount
+    transfer_calldata = ldo_token.transfer.encode_input(rewards_manager, reward_amount)
+    dao_agent.execute(ldo_token, 0, transfer_calldata, {"from": dao_voting})
+    assert ldo_token.balanceOf(rewards_manager) == reward_amount
 
     # someone starts the first rewards period
 

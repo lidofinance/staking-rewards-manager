@@ -12,7 +12,7 @@ interface StakingRewards:
 
 owner: public(address)
 rewards_contract: public(address)
-reward_amount: public(uint256)
+ldo_token: constant(address) = 0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32
 
 
 @external
@@ -26,7 +26,6 @@ def transfer_ownership(_to: address):
     @notice Changes the contract owner. Can only be called by the current owner.
     """
     assert msg.sender == self.owner, "not permitted"
-    assert _to != ZERO_ADDRESS, "zero owner"
     self.owner = _to
 
 
@@ -36,20 +35,7 @@ def set_rewards_contract(_rewards_contract: address):
     @notice Sets the StakingRewards contract. Can only be called by the owner.
     """
     assert msg.sender == self.owner, "not permitted"
-    assert _rewards_contract != ZERO_ADDRESS, "zero rewards contract"
     self.rewards_contract = _rewards_contract
-
-
-@external
-def set_reward_amount(_reward_amount: uint256):
-    """
-    @notice
-        Sets the amount of reward tokens that is to be distributed throughout
-        the next rewards period. Setting this to 0 disables rewards distribution.
-        Can only be called by the owner.
-    """
-    assert msg.sender == self.owner, "not permitted"
-    self.reward_amount = _reward_amount
 
 
 @view
@@ -75,9 +61,10 @@ def start_next_rewards_period():
         distributing `self.reward_amount()` tokens throughout the period.
     """
     rewards: address = self.rewards_contract
-    amount: uint256 = self.reward_amount
+    amount: uint256 = ERC20(ldo_token).balanceOf(self)
 
     assert rewards != ZERO_ADDRESS and amount != 0, "manager: rewards disabled"
     assert self._is_rewards_period_finished(rewards), "manager: rewards period not finished"
 
-    StakingRewards(rewards).notifyRewardAmount(amount, self.owner)
+    ERC20(ldo_token).approve(rewards, amount)
+    StakingRewards(rewards).notifyRewardAmount(amount, self)
