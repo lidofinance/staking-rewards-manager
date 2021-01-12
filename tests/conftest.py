@@ -1,8 +1,14 @@
 import pytest
 from brownie import Wei, ZERO_ADDRESS
-
 from scripts.deploy import deploy_manager_and_rewards
-from utils.config import lp_token_address, ldo_token_address, lido_dao_agent_address
+from utils.config import (
+    lp_token_address,
+    ldo_token_address,
+    lido_dao_agent_address,
+    lido_dao_finance_address,
+    lido_dao_voting_address,
+    lido_dao_token_manager_address
+)
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -37,10 +43,29 @@ def curve_farmer(accounts, gauge):
     return acct
 
 
-# Lido DAO Voting app
 @pytest.fixture(scope='module')
-def dao_voting(accounts):
+def dao_voting_impersonated(accounts):
     return accounts.at("0x2e59A20f205bB85a89C53f1936454680651E618e", force=True)
+
+
+@pytest.fixture(scope='module')
+def dao_voting(interface):
+    return interface.Voting(lido_dao_voting_address)
+
+
+@pytest.fixture(scope='module')
+def dao_token_manager(interface):
+    return interface.TokenManager(lido_dao_token_manager_address)
+
+
+@pytest.fixture(scope='module')
+def dao_finance(interface):
+    return interface.Finance(lido_dao_finance_address)
+
+
+@pytest.fixture(scope='module')
+def dao_holder(accounts):
+    return accounts.at('0x537dfB5f599A3d15C50E2d9270e46b808A52559D', force=True)
 
 
 @pytest.fixture(scope='module')

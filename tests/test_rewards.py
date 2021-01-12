@@ -11,7 +11,7 @@ def test_happy_path(
     gauge,
     gauge_admin,
     ldo_token,
-    dao_voting,
+    dao_voting_impersonated,
     dao_agent,
     ape,
     stranger,
@@ -42,7 +42,7 @@ def test_happy_path(
 
     assert ldo_token.balanceOf(dao_agent) >= reward_amount
     transfer_calldata = ldo_token.transfer.encode_input(rewards_manager, reward_amount)
-    dao_agent.execute(ldo_token, 0, transfer_calldata, {"from": dao_voting})
+    dao_agent.execute(ldo_token, 0, transfer_calldata, {"from": dao_voting_impersonated})
     assert ldo_token.balanceOf(rewards_manager) == reward_amount
 
     # someone starts the first rewards period
@@ -113,7 +113,7 @@ def test_happy_path(
 
     assert ldo_token.balanceOf(dao_agent) >= reward_amount
     transfer_calldata = ldo_token.transfer.encode_input(rewards_manager, reward_amount)
-    dao_agent.execute(ldo_token, 0, transfer_calldata, {"from": dao_voting})
+    dao_agent.execute(ldo_token, 0, transfer_calldata, {"from": dao_voting_impersonated})
     assert ldo_token.balanceOf(rewards_manager) == reward_amount
 
     # someone starts the second rewards period
