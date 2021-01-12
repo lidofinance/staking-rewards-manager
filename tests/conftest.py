@@ -1,5 +1,6 @@
 import pytest
 from brownie import Wei, ZERO_ADDRESS
+from scripts.deploy import deploy_manager_and_rewards
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -83,28 +84,13 @@ def gauge_admin(gauge, accounts):
 
 
 class RewardsHelpers:
-    StakingRewards = None
-    RewardsManager = None
-
     @staticmethod
-    def deploy_rewards(rewards_period, dao_agent, lp_token, rewards_token, deployer):
-        manager = RewardsHelpers.RewardsManager.deploy({"from": deployer})
-
-        rewards = RewardsHelpers.StakingRewards.deploy(
-            dao_agent, # _owner
-            manager, # _rewardsDistribution
-            rewards_token, # _rewardsToken
-            lp_token, # _stakingToken
-            rewards_period, # _rewardsDuration
-            {"from": deployer}
+    def deploy_rewards(rewards_period, deployer):
+        return deploy_manager_and_rewards(
+            rewards_duration=rewards_period,
+            tx_params={"from": deployer},
+            publish_source=False
         )
-
-        manager.set_rewards_contract(rewards, {"from": deployer})
-        assert manager.rewards_contract() == rewards
-
-        manager.transfer_ownership(dao_agent, {"from": deployer})
-
-        return {"manager": manager, "rewards": rewards}
 
     @staticmethod
     def install_rewards(gauge, gauge_admin, rewards_token, rewards):
@@ -125,9 +111,7 @@ class RewardsHelpers:
 
 
 @pytest.fixture(scope='module')
-def rewards_helpers(StakingRewards, RewardsManager):
-    RewardsHelpers.StakingRewards = StakingRewards
-    RewardsHelpers.RewardsManager = RewardsManager
+def rewards_helpers():
     return RewardsHelpers
 
 

@@ -26,16 +26,10 @@ def test_happy_path(
     rewards_period = ONE_WEEK
     reward_amount = Wei("1 ether")
 
-    deployed = rewards_helpers.deploy_rewards(
+    (rewards_manager, rewards_contract) = rewards_helpers.deploy_rewards(
         rewards_period=rewards_period,
-        dao_agent=dao_agent,
-        lp_token=lp_token,
-        rewards_token=ldo_token,
         deployer=ape
     )
-
-    rewards_manager = deployed["manager"]
-    rewards_contract = deployed["rewards"]
 
     rewards_helpers.install_rewards(
         gauge=gauge,
