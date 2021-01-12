@@ -11,10 +11,10 @@ lido_dao_voting_address = '0x2e59A20f205bB85a89C53f1936454680651E618e'
 lido_dao_token_manager_address = '0xf73a1260d222f447210581DDf212D915c09a3249'
 
 
-initial_rewards_duration_sec = 60 * 60 * 24 * 7 # one week
+initial_rewards_duration_sec = 60 * 60 * 24 * 30 # one month
 
 
-gas_price = "10 gwei"
+gas_price = "90 gwei"
 
 
 def get_is_live():

@@ -1,3 +1,5 @@
+import sys
+
 from brownie import (
     network,
     accounts,
@@ -13,7 +15,8 @@ from utils.config import (
     initial_rewards_duration_sec,
     gas_price,
     get_is_live,
-    get_deployer_account
+    get_deployer_account,
+    prompt_bool
 )
 
 
@@ -54,6 +57,19 @@ def deploy_manager_and_rewards(rewards_duration, tx_params, publish_source=True)
 def main():
     is_live = get_is_live()
     deployer = get_deployer_account(is_live)
+
+    print('Deployer:', deployer)
+    print('Initial rewards duration:', initial_rewards_duration_sec)
+    print('LP token address:', lp_token_address)
+    print('LDO token address:', ldo_token_address)
+    print('Gas price:', gas_price)
+
+    sys.stdout.write('Proceed? [y/n]: ')
+
+    if not prompt_bool():
+        print('Aborting')
+        return
+
     deploy_manager_and_rewards(
         rewards_duration=initial_rewards_duration_sec,
         tx_params={"from": deployer, "gas_price": Wei(gas_price), "required_confs": 1},
